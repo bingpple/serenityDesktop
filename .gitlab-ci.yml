@@ -1,0 +1,86 @@
+before_script:
+ #  -- apt-get update -qq && ap
+  - COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+  - |
+    if [[ ${COMMIT_MESSAGE} == *\[skip\ ci\]* ]]; then
+    echo "skipping ci build"
+    exit 0
+    fi
+  - java -version
+  - echo "Stop sauce connect..."
+  - pkill -f "/home/gitlab-runner/sc-4.4.12-linux/bin/sc -u $SAUCELBSUSERNAME -k $SAUCELABSKEY" || true
+  - echo "completed stop sauce connect."
+  - |
+    while read -r line; do
+    echo "$line";
+    if [[ "$line" == *"Sauce Connect is up, you may start your tests"* ]]; then
+    echo "Sauce Connect get started completely!";
+    break;
+    fi
+    done < <(/home/gitlab-runner/sc-4.4.12-linux/bin/sc -u $SAUCELBSUSERNAME -k $SAUCELABSKEY -i tunnel name)
+#  - pipeline-info.sh
+
+
+test_yourproject_Windows10_IE_11:
+  tags:
+    - tag for your project
+  only:
+    - master
+  script:
+    - EXIT_CODE=0
+    - echo "Running tests for yourproject"
+    - |
+      if [[ $JOB_NAME == "yourproject" ]]; then
+      mvn clean verify -Dcucumber.options='--tags @yourproject' -Dsaucelabs.target.platform=WIN10 -Dwebdriver.driver=IEXPLORER -Dsaucelabs.driver.version=11 -Dsaucelabs.url=http://"$SAUCELBSUSERNAME":"$SAUCELABSKEY"@ondemand.saucelabs.com:80/wd/hub -Dsaucelabs.access.key="$SAUCELABSKEY" -Dsaucelabs.user.id="$SAUCELBSUSERNAME" -Dmaven.test.failure.ignore=false -Dserenity.driver.capabilities="screenResolution:1920x1080"|| EXIT_CODE=1
+      fi
+    - echo "Building aggregate serenity Report"
+    - mvn serenity:aggregate
+    - pkill -f "/home/gitlab-runner/sc-4.4.12-linux/bin/sc -u $SAUCELBSUSERNAME -k $SAUCELABSKEY" || true
+    - exit $EXIT_CODE
+  artifacts:    
+    paths:
+      - target/site/serenity/
+    when: always
+
+test_yourproject_chrome_win10:
+  tags:
+    - tag for your project
+  only:
+    - master
+  script:
+    - EXIT_CODE=0
+    - |
+      if [[ $JOB_NAME == "yourproject" ]]; then
+      mvn clean verify -Dcucumber.options='--tags @yourproject' -Dsaucelabs.target.platform=WIN10 -Dwebdriver.driver=chrome -Dsaucelabs.driver.version=64.0 -Dsaucelabs.url=http://"$SAUCELBSUSERNAME":"$SAUCELABSKEY"@localhost:4445/wd/hub -Dsaucelabs.access.key="$SAUCELABSKEY" -Dsaucelabs.user.id="$SAUCELBSUSERNAME" -Dmaven.test.failure.ignore=false -Dserenity.driver.capabilities="screenResolution:1920x1080" || EXIT_CODE=1
+      fi
+    - echo "Building aggregate serenity Report"
+    - mvn serenity:aggregate
+    - pkill -f "/home/gitlab-runner/sc-4.4.12-linux/bin/sc -u $SAUCELBSUSERNAME -k $SAUCELABSKEY" || true
+    - exit $EXIT_CODE
+  artifacts:
+    paths:
+      - target/site/serenity/
+    when: always
+
+test_yourproject_firefox_Win10:
+  tags:
+    - tag for your project
+  only:
+    - master
+  script:
+    - EXIT_CODE=0
+    - |
+      if [[ $JOB_NAME == "yourproject" ]]; then
+      mvn clean verify -Dcucumber.options='--tags @yourproject' -Dsaucelabs.target.platform=WIN10 -Dwebdriver.driver=firefox -Dsaucelabs.driver.version=57.0 -Dsaucelabs.url=http://"$SAUCELBSUSERNAME":"$SAUCELABSKEY"@localhost:4445/wd/hub -Dsaucelabs.access.key="$SAUCELABSKEY" -Dsaucelabs.user.id="$SAUCELBSUSERNAME" -Dmaven.test.failure.ignore=false -Dserenity.driver.capabilities="screenResolution:1920x1080" || EXIT_CODE=1
+      fi
+    - echo "Building aggregate serenity Report"
+    - mvn serenity:aggregate
+    - pkill -f "/home/gitlab-runner/sc-4.4.12-linux/bin/sc -u $SAUCELBSUSERNAME -k $SAUCELABSKEY" || true
+    - exit $EXIT_CODE
+  artifacts:
+    paths:
+      - target/site/serenity/
+    when: always
+
+after_script:
+  - pkill -f "/home/gitlab-runner/sc-4.4.12-linux/bin/sc -u $SAUCELBSUSERNAME -k $SAUCELABSKEY"||true
